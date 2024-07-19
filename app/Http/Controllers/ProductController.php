@@ -10,28 +10,39 @@ use Illuminate\Support\Facades\Validator;
 class ProductController extends Controller
 {
     //this method will show product page
-    public function index(){
-        return view('products.list');
+    public function index()
+    {
+
+        $products = Product::orderBy('created_at','DESC')->get();
+
+        return view('products.list',[
+            'products' => $products
+        ]);
     }
 
 
     //This method will show create product page
-    public function create(){
+    public function create()
+    {
         return view('products.create');
     }
 
     //This method will store a product in db
-    public function store(Request $request){
+    public function store(Request $request)
+    {
         $rules = [
             'name' => 'required|min:5',
             'sku' => 'required|min:3',
             'price' => 'required|numeric',
-
         ];
 
-        $validator = Validator::make($request->all(),$rules);
+        if ($request->image != "") {
+            $rules['image'] = 'image';
+        }
 
-        if($validator->fails()){
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
             return redirect()->route('products.create')->withInput()->withErrors($validator);
         }
 
@@ -43,19 +54,35 @@ class ProductController extends Controller
         $product->description = $request->description;
         $product->save();
 
+        if ($request->image != "") {
+            // here we will store image
+            $image = $request->image;
+            $ext = $image->getClientOriginalExtension();
+            $imageName = time() . '.' . $ext; // Unique image name
+
+            // Save image to product directory
+            $image->move(public_path('uploads/products'), $imageName);
+
+            // Save image name in database
+            $product->image = $imageName;
+            $product->save();
+        }
+
+
+
         return redirect()->route('products.index')->with('success', 'Product added successfully.');
     }
 
     // This method will show edit product page
-    public function edit(){
-
+    public function edit()
+    {
     }
 
-    public function update(){
-
+    public function update()
+    {
     }
 
-    public function destroy(){
-
+    public function destroy()
+    {
     }
 }
